@@ -1,40 +1,45 @@
 from typing import List
+from typing import Optional
 
 from dollar.dollarobject import DollarObject
 from dollar.plugin.plugintype import PluginType
+from dollar.plugin.pluginarg import PluginArg
 
 
 class DollarPlugin:
 
-    def gettype(self) -> PluginType:
+    def get_type(self) -> PluginType:
         pass
 
-    def getname(self) -> str:
+    def get_name(self) -> str:
         pass
+
 
 class DollarFunctionPlugin(DollarPlugin):
 
-    def gettype(self) -> PluginType:
+    def get_type(self) -> PluginType:
         return PluginType.FUNCTION
 
-    def getname(self) -> str:
+    def get_arg_info(self) -> List[PluginArg]:
+        return []
+
+    def get_name(self) -> str:
         pass
 
-    def execfunction(self, this_dollar_object: DollarObject):
+    def exec_function(self, this_dollar_object: DollarObject):
         pass
 
 
 class DollarBlockPlugin(DollarPlugin):
 
-    def gettype(self) -> PluginType:
+    def get_type(self) -> PluginType:
         return PluginType.BLOCK
 
-    def getname(self) -> str:
+    def get_name(self) -> str:
         pass
 
-    def execblock(self, something):
+    def exec_block(self, something):
         pass
-
 
 
 class DollarExtensionPlugin(DollarPlugin):
@@ -42,20 +47,23 @@ class DollarExtensionPlugin(DollarPlugin):
     def extends(self):
         return None
 
-    def gettype(self) -> PluginType:
+    def get_type(self) -> PluginType:
         return PluginType.EXTENSION
 
-    def getname(self) -> str:
+    def get_name(self) -> str:
         pass
 
-    def getsecondaries(self) -> List[str]:
+    def validate_primary(self, dollar_object: DollarObject) -> Optional[str]:
+        return None
+
+    def get_secondaries(self) -> List[str]:
         return []
 
-    def getprimaries(self) -> List[str]:
+    def get_primaries(self) -> List[str]:
         return []
 
-    def execprimary(self, dollar_object):
+    def exec_primary(self, dollar_object):
         pass
 
-    def execsecondary(self, dollar_object):
+    def exec_secondary(self, dollar_object):
         pass

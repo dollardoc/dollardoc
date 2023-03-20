@@ -7,31 +7,35 @@ class PageExtensionPlugin(DollarExtensionPlugin):
     def extends(self):
         return None
 
-    def getname(self):
+    def get_name(self):
         return "page"
 
-    def getsecondaries(self):
+    def get_secondaries(self):
         return []
 
-    def getprimaries(self):
+    def get_primaries(self):
         return ["title", "description"]
 
-    def validateprimaries(self, dollar_object: DollarObject):
-        count = 0
-        try:
-            dollar_object.get("title")
-        except:
-            count = count + 1
-        try:
-            dollar_object.get("description")
-        except:
-            count = count + 1
-        if count < 2:
-            return "You need both \"title\" and \"description\" in your object"
+    def validate_primary(self, dollar_object: DollarObject):
+        count = 2
+        ret = ""
+
+        if "title" not in dollar_object.get_header():
+            count = count - 1
+            ret = "Page is missing \"title\" key"
+        if "description" not in dollar_object.get_header():
+            count = count - 1
+            ret = "Page is missing \"description\" key"
+
+        if count == 0:
+            return "Page is missing \"title\" and \"description\" keys"
+        elif count == 1:
+            return ret
+
         return None
 
-    def execprimary(self, dollar_object: DollarObject):
+    def exec_primary(self, dollar_object: DollarObject):
         pass
 
-    def execsecondary(self, dollar_object: DollarObject):
+    def exec_secondary(self, dollar_object: DollarObject):
         pass

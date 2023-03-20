@@ -1,2 +1,0 @@
-class DollarExecutionException(Exception):
-    pass

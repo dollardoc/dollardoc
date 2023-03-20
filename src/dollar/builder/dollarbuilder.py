@@ -1,9 +1,14 @@
 from dollar.confighandler import ConfigHandler
+from dollar.confighandler import ConfigType
+from dollar.dollarcontext import DollarContext
 from dollar.dollarobjectidmap import DollarObjectIdMap
 from dollar.dollarobjectimpl import DollarObjectImpl
+from dollar.dollarexception import DollarExecutionException
+from dollar.dollarexception import DollarException
 from dollar.file.dollarfile import DollarFile
 from dollar.file.dollarfilereader import DollarFileReader
 from dollar.file.dollarfilewriter import DollarFileWriter
+from dollar.file.filecopier import FileCopier
 from dollar.format.header.headerparser import HeaderParser
 from dollar.format.raw.rawdollarparser import RawDollarParser
 from dollar.format.transformer.headertransformer import HeaderTransformer
@@ -19,18 +24,20 @@ class DollarBuilder:
     @staticmethod
     def build():
         ConfigHandler.load_config_default()
+        conf_docs_path = ConfigHandler.get(ConfigType.DOCS_PATH)
+        conf_target_path = ConfigHandler.get(ConfigType.TARGET_PATH)
+        conf_plugin_path = ConfigHandler.get(ConfigType.PLUGIN_PATH)
+        conf_file_passthrough = ConfigHandler.get_str_list_opt(ConfigType.FILE_PASSTHROUGH)
         BuiltinPluginLoader.load()
-        PluginHandler.importplugins(
-                ConfigHandler.get("plugin_path"))
+        PluginHandler.import_plugins(conf_plugin_path)
 
-        mdd_files = DollarFileReader.read_mdd_files(
-                ConfigHandler.get("docs_path"))
+        mdd_files = DollarFileReader.read_mdd_files(conf_docs_path)
 
         dollar_object_list = []
 
         for mdd_file in mdd_files:
-            path = mdd_file.getpath()
-            content = mdd_file.getcontent()
+            path = mdd_file.get_path()
+            content = mdd_file.get_content()
 
             dollar_object = DollarObjectImpl(
                     content,
@@ -38,41 +45,100 @@ class DollarBuilder:
                     path[:-1],
                     "/" + path[:-1].replace("\\", "/"))
 
-            header_parser_result = HeaderParser.parse(content)
-            dollar_object.setunparsedheader(header_parser_result.header_object)
-            dollar_object.setheaderend(header_parser_result.header_end)
+            dollar_context = DollarContext(path, 0, 0)
 
-            DollarObjectIdMap.add(dollar_object)
+            header_parser_result = HeaderParser.parse(content, dollar_context)
+            dollar_object.set_unparsed_header(header_parser_result.header_object)
+            dollar_object.set_header_end(header_parser_result.header_end)
+
+            try:
+                DollarObjectIdMap.add(dollar_object)
+            except DollarException as e:
+                raise DollarExecutionException(
+                        e.get_message(),
+                        dollar_context) from e
             dollar_object_list.append(dollar_object)
 
         for dollar_object in dollar_object_list:
-            dollar_object.setheader(
-                    HeaderTransformer.transform(dollar_object, dollar_object.getunparsedheader()))
 
-            PluginMap.getextension(dollar_object.gettype())\
-                    .execprimary(dollar_object)
+            dollar_context = DollarContext(dollar_object.get_path(), 0, 0)
 
-            for key in dollar_object.getheader().keys():
-                if PluginMap.hasextensionwithsecondarykey(key):
-                    PluginMap.getextensionfromsecondarykey(key)\
-                            .execsecondary(dollar_object)
+            dollar_object.set_header(
+                    HeaderTransformer.transform(
+                            dollar_object,
+                            dollar_object.get_unparsed_header(),
+                            dollar_context))
+            try:
+                primary_plugin = PluginMap.get_extension(dollar_object.get_type())
+            except DollarException as e:
+                raise DollarExecutionException(
+                        e.get_message(),
+                        dollar_context) from e
+            validate_plugin = primary_plugin
+            visited = [dollar_object.get_type()]
+            while True:
+                if validate_plugin.extends() in visited:
+                    raise DollarExecutionException(
+                            "Extension plugin {} in Dollar Object {} was caught in a circular dependency loop"
+                            .format(primary_plugin.get_name(), dollar_object.get_id()),
+                            dollar_context)
+                validation = validate_plugin.validate_primary(dollar_object)
+                if validation is not None:
+                    raise DollarExecutionException(
+                            "Validation on {} failed: {}"
+                            .format(dollar_object.get_id(), validation),
+                            dollar_context)
+                if validate_plugin.extends() is not None:
+                    visited.append(validate_plugin.extends())
+                    try:
+                        validate_plugin = PluginMap.get_extension(validate_plugin.extends())
+                    except DollarException as e:
+                        raise DollarExecutionException(
+                                e.get_message(),
+                                dollar_context) from e
+                else:
+                    break
+
+            primary_plugin.exec_primary(dollar_object)
+
+            for key in dollar_object.get_header().keys():
+                if PluginMap.has_extension_with_secondary_key(key):
+                    PluginMap.get_extension_from_secondary_key(key)\
+                            .exec_secondary(dollar_object)
 
         for dollar_object in dollar_object_list:
-            dollar_object.setrawformats(
-                    RawDollarParser.parse(dollar_object.getcontentwithoutheader()))
+            dollar_context_start = DollarContext(
+                    dollar_object.get_path(),
+                    dollar_object.get_header_end() + 2,
+                    0)
+            dollar_object.set_raw_formats(
+                    RawDollarParser.parse(
+                            dollar_object.get_content_without_header(),
+                            dollar_context_start))
 
         for dollar_object in dollar_object_list:
-            dollar_object.setinputformats(
-                    RawToInputTransformer.transform_list(dollar_object, dollar_object.getrawformats()))
+            dollar_object.set_input_formats(
+                    RawToInputTransformer.transform_list(dollar_object, dollar_object.get_raw_formats()))
 
         for dollar_object in dollar_object_list:
-            dollar_object.setoutput(
-                    InputToStrTransformer.transform_list(dollar_object, dollar_object.getinputformats()))
+            dollar_object.set_output(
+                    InputToStrTransformer.transform_list(dollar_object, dollar_object.get_input_formats()))
 
         outputs = []
         for dollar_object in dollar_object_list:
             dollar_file = DollarFile(
-                    dollar_object.getoutputpath(),
-                    dollar_object.getoutput())
+                    dollar_object.get_output_path(),
+                    dollar_object.get_output())
             outputs.append(dollar_file)
-        DollarFileWriter.write_files(outputs)
+        DollarFileWriter.write_files(conf_target_path, outputs)
+
+        for file_ending in conf_file_passthrough:
+            FileCopier.copy_files(
+                    conf_docs_path,
+                    conf_target_path,
+                    file_ending)
+
+    @classmethod
+    def clean_data(self):
+        PluginHandler.clean()
+        DollarObjectIdMap.clean()

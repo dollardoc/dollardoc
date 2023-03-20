@@ -5,5 +5,5 @@ class OutputFormatterHandler:
     formatter = OutputFormatterMarkdown()
 
     @classmethod
-    def getformatter(cls):
+    def get_formatter(cls):
         return cls.formatter

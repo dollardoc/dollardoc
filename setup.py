@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="dollardoc",
-    version="0.1.0",
+    version="0.2.0",
     description="Object oriented markdown documentation",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -15,6 +15,7 @@ setup(
     packages=[
         "dollar",
         "dollar.builder",
+        "dollar.cli",
         "dollar.file",
         "dollar.format",
         "dollar.format.header",
@@ -43,7 +44,7 @@ setup(
         "Topic :: Education",
         "Topic :: Office/Business",
         "Topic :: Scientific/Engineering",
-        "Topic :: Software Development"
+        "Topic :: Software Development",
         "Topic :: Software Development :: Documentation",
         "Topic :: Software Development :: Version Control",
         "Topic :: Text Editors :: Word Processors",
@@ -67,8 +68,8 @@ setup(
         "PyYAML"
     ],
     entry_points={
-#        "console_scripts": [
-#            "dollardoc=dollar.cli.main:main"
-#        ]
+        "console_scripts": [
+            "dollardoc=dollar.cli.cli:cli"
+        ]
     },
 )

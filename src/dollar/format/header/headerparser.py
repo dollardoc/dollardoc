@@ -1,13 +1,14 @@
 import yaml
 
-from dollar.dollarexecutionexception import DollarExecutionException
+from dollar.dollarexception import DollarExecutionException
+from dollar.dollarcontext import DollarContext
 from dollar.format.header.headerparserresult import HeaderParserResult
 
 
 class HeaderParser:
 
     @classmethod
-    def parse(cls, content):
+    def parse(cls, content, dollar_context: DollarContext):
         content = content.split("\n")
         result = HeaderParserResult(None, 0)
 
@@ -23,7 +24,7 @@ class HeaderParser:
                 if started_headers:
                     started_headers = False
                     result.header_end = i
-                    break;
+                    break
                 else:
                     started_headers = True
 
@@ -39,7 +40,9 @@ class HeaderParser:
                 header = header + line
 
         if started_headers:
-            raise DollarExecutionException("Parsing headers exited with a faulty state")
+            raise DollarExecutionException(
+                    "Parsing headers exited with a faulty state",
+                    dollar_context)
 
         result.header_object = yaml.safe_load(header)
         return result

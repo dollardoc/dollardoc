@@ -1,6 +1,6 @@
 import os
 
-from dollar.dollarexecutionexception import DollarExecutionException
+from dollar.dollarexception import DollarException
 from dollar.file.dollarfile import DollarFile
 
 
@@ -25,7 +25,7 @@ class DollarFileReader:
                 try:
                     f = open(full_path, "r")
                 except Exception as e:
-                    raise DollarExecutionException("Failed to open file {}".format(full_path)) from e
+                    raise DollarException("Failed to open file {}".format(full_path)) from e
                 full_path_split = os.path.normpath(full_path).split(os.path.sep)
                 open_dir_start_split = os.path.normpath(_open_dir_start).split(os.path.sep)
                 to = len(full_path_split)
@@ -35,10 +35,9 @@ class DollarFileReader:
                 try:
                     file_output = f.read()
                 except Exception as e:
-                    raise DollarExecutionException("Failed to read file {}".format(full_path)) from e
+                    raise DollarException("Failed to read file {}".format(full_path)) from e
                 result.append(DollarFile(new_path, file_output))
                 f.close()
             else:
-                # Allow other files to exist in src
-                pass
+                pass  # Allow other files to exist in src
         return result

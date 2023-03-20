@@ -15,4 +15,3 @@ class BuiltinPluginLoader:
         PluginHandler.register(ListFunctionPlugin())
         PluginHandler.register(ListRefFunctionPlugin())
         PluginHandler.register(PageExtensionPlugin())
-

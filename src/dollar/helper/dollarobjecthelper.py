@@ -1,26 +1,27 @@
 from dollar.plugin.pluginmap import PluginMap
 from dollar.dollarobject import DollarObject
-from dollar.validationhelper import ValidationHelper
+from dollar.helper.validationhelper import ValidationHelper
+
 
 class DollarObjectHelper:
 
     @staticmethod
-    def istype(dollar_object: DollarObject, dollar_object_type: str):
-        if dollar_object.gettype() == dollar_object_type:
+    def is_type(dollar_object: DollarObject, dollar_object_type: str):
+        if dollar_object.get_type() == dollar_object_type:
             return True
-        dollar_object_type_temp = dollar_object_type
-        while PluginMap.hasextension(dollar_object_type_temp):
-            dollar_object_type_extends = PluginMap.getextension(dollar_object_type_temp).extends()
+        dollar_object_type_temp = dollar_object.get_type()
+        while PluginMap.has_extension(dollar_object_type_temp):
+            dollar_object_type_extends = PluginMap.get_extension(dollar_object_type_temp).extends()
             if dollar_object_type == dollar_object_type_extends:
                 return True
             dollar_object_type_temp = dollar_object_type_extends
         return False
 
     @staticmethod
-    def gettitle(dollar_object: DollarObject):
-        header = dollar_object.getheader()
+    def get_title(dollar_object: DollarObject):
+        header = dollar_object.get_header()
         if "title" in header:
             title = header["title"]
-            if ValidationHelper.validstr(title):
+            if ValidationHelper.valid_str(title):
                 return title
-        return dollar_object.getid()
+        return dollar_object.get_id()

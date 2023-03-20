@@ -8,38 +8,38 @@ class DollarObject:
         self.backrefs = []
         self.backlinks = []
 
-    def getid(self):
-        return self.getheader()["id"]
+    def get_id(self):
+        return self.get_header()["id"]
 
-    def gettype(self):
-        return self.getheader()["type"]
+    def get_type(self):
+        return self.get_header()["type"]
 
-    def getheader(self):
+    def get_header(self):
         return self.header
 
-    def getbackrefs(self):
+    def get_backrefs(self):
         return self.backrefs
 
-    def addbackref(self, backref_dollar_object):
+    def add_backref(self, backref_dollar_object):
         if backref_dollar_object not in self.backrefs:
             self.backrefs.append(backref_dollar_object)
 
-    def getbacklinks(self):
+    def get_backlinks(self):
         return self.backlinks
 
-    def addbacklink(self, backlink_dollar_object):
+    def add_backlink(self, backlink_dollar_object):
         if backlink_dollar_object != self:
             if backlink_dollar_object not in self.backlinks:
                 self.backlinks.append(backlink_dollar_object)
 
-    def getpath(self):
+    def get_path(self):
         return self.path
 
-    def getoutputpath(self):
+    def get_output_path(self):
         return self.output_path
 
-    def gettargetpath(self):
+    def get_target_path(self):
         return self.target_path
 
     def __repr__(self):
-        return "DollarObject(id: " + self.getid() + ")"
+        return "DollarObject(id: " + self.get_id() + ")"
