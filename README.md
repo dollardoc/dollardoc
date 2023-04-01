@@ -144,7 +144,7 @@ Unless there is an exception, all your generated markdown files will show up in 
 
 ## Dollar Syntax Specification Document
 
-*Specification currently under development*
+[dollar-syntax-specification-v0_1_0.pdf](https://github.com/dollardoc/dollar-syntax-specification/releases/download/v0.1.0/dollar-syntax-specification-v0_1_0.pdf)
 
 ## Outputs Supported
 
