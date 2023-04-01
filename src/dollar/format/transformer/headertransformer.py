@@ -10,7 +10,7 @@ from dollar.dollarobjectidmap import DollarObjectIdMap
 class HeaderTransformer:
 
     @classmethod
-    def transform(cls, this_dollar_object: DollarObject, header, dollar_context: DollarContext):
+    def transform(cls, this_dollar_object: DollarObject, header, dollar_context: DollarContext, dollar_id_map: DollarObjectIdMap):
         header = copy.deepcopy(header)
         loops = header
         if type(header) == list:
@@ -20,10 +20,10 @@ class HeaderTransformer:
                 continue
 
             if type(header[key]) == dict:
-                header[key] = cls.transform(this_dollar_object, header[key], dollar_context)
+                header[key] = cls.transform(this_dollar_object, header[key], dollar_context, dollar_id_map)
 
             elif type(header[key]) == list:
-                header[key] = cls.transform(this_dollar_object, header[key], dollar_context)
+                header[key] = cls.transform(this_dollar_object, header[key], dollar_context, dollar_id_map)
 
             elif type(header[key]) == str:
                 value = header[key].strip()
@@ -40,9 +40,13 @@ class HeaderTransformer:
                         dollar_parsing = True
                         dollar_start = i
                     elif dollar_parsing:
-                        if char == " ":
+                        if char == " " or char == "\n":
+                            end_diff = 1
+                            if dollar_value[-1] in (".", ",", ":", ";", "!", "?", "\"", "'", "-", "_"):
+                                end_diff = end_diff + 1
+                                dollar_value = dollar_value[:-1]
                             dollar_parsing = False
-                            dollar_end = i - 1
+                            dollar_end = i - end_diff
                             value = cls._handle_value_string_parse(
                                     value,
                                     header,
@@ -56,19 +60,23 @@ class HeaderTransformer:
                             dollar_value = dollar_value + char
                     i = i + 1
                 if dollar_parsing:
+                    end_diff = 1
+                    if dollar_value[-1] in (".", ",", ":", ";", "!", "?", "\"", "'", "-", "_"):
+                        end_diff = end_diff + 1
+                        dollar_value = dollar_value[:-1]
                     if dollar_value.startswith("this."):
                         value = cls._handle_value_string_parse(
                                 value,
                                 header,
                                 dollar_value,
                                 dollar_start,
-                                len(value) - 1,
+                                len(value) - end_diff,
                                 dollar_context)
                     elif dollar_value == "this":
                         value = this_dollar_object
                     elif dollar_start == 0:
                         try:
-                            value = DollarObjectIdMap.get(dollar_value)
+                            value = dollar_id_map.get(dollar_value)
                         except DollarException as e:
                             raise DollarExecutionException(
                                     e.get_message(),

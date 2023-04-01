@@ -16,12 +16,13 @@ from dollar.format.input.inputformattype import InputFormatType
 from dollar.format.output.outputfactory import OutputFactory
 from dollar.format.output.outputformatterhandler import OutputFormatterHandler
 from dollar.plugin.pluginargvalidatior import PluginArgValidator
+from dollar.plugin.pluginmap import PluginMap
 
 
 class InputToStrTransformer:
 
     @classmethod
-    def transform(cls, this_dollar_object: DollarObject, input_format: InputFormat) -> str:
+    def transform(cls, this_dollar_object: DollarObject, input_format: InputFormat, plugin_map: PluginMap) -> str:
         if input_format.get_format_type() == InputFormatType.TEXT:
             input_format = cast(InputFormatText, input_format)
             return input_format.get_text()
@@ -52,7 +53,7 @@ class InputToStrTransformer:
             plugin.get_arg_info()
 
             try:
-                PluginArgValidator.validate(params, plugin.get_arg_info())
+                PluginArgValidator.validate(params, plugin.get_arg_info(), plugin_map)
                 plugin_output = plugin.exec_function(*params)
                 return OutputFormatterHandler.get_formatter().format(this_dollar_object, plugin_output)
             except DollarException as e:
@@ -82,8 +83,8 @@ class InputToStrTransformer:
                     input_format.get_dollar_context())
 
     @classmethod
-    def transform_list(cls, this_dollar_object: DollarObject, input_formats: List[InputFormat]):
+    def transform_list(cls, this_dollar_object: DollarObject, input_formats: List[InputFormat], plugin_map: PluginMap):
         result = []
         for input_format in input_formats:
-            result.append(cls.transform(this_dollar_object, input_format))
+            result.append(cls.transform(this_dollar_object, input_format, plugin_map))
         return "".join(result)

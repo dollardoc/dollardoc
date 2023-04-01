@@ -16,24 +16,25 @@ from dollar.format.transformer.inputtostrtransformer import InputToStrTransforme
 from dollar.format.transformer.rawtoinputtransformer import RawToInputTransformer
 from dollar.plugin.builtinpluginloader import BuiltinPluginLoader
 from dollar.plugin.pluginhandler import PluginHandler
-from dollar.plugin.pluginmap import PluginMap
 
 
 class DollarBuilder:
 
     @staticmethod
     def build():
-        ConfigHandler.load_config_default()
-        conf_docs_path = ConfigHandler.get(ConfigType.DOCS_PATH)
-        conf_target_path = ConfigHandler.get(ConfigType.TARGET_PATH)
-        conf_plugin_path = ConfigHandler.get(ConfigType.PLUGIN_PATH)
-        conf_file_passthrough = ConfigHandler.get_str_list_opt(ConfigType.FILE_PASSTHROUGH)
-        BuiltinPluginLoader.load()
-        PluginHandler.import_plugins(conf_plugin_path)
+        config_map = ConfigHandler.load_config_default()
+        conf_docs_path = config_map.get(ConfigType.DOCS_PATH)
+        conf_target_path = config_map.get(ConfigType.TARGET_PATH)
+        conf_plugin_path = config_map.get(ConfigType.PLUGIN_PATH)
+        conf_file_passthrough = config_map.get_str_list_opt(ConfigType.FILE_PASSTHROUGH)
+        BuiltinPluginLoader.load(config_map)
+        plugin_map = PluginHandler.import_plugins(conf_plugin_path, config_map)
 
         mdd_files = DollarFileReader.read_mdd_files(conf_docs_path)
 
         dollar_object_list = []
+
+        dollar_id_map = DollarObjectIdMap()
 
         for mdd_file in mdd_files:
             path = mdd_file.get_path()
@@ -52,7 +53,7 @@ class DollarBuilder:
             dollar_object.set_header_end(header_parser_result.header_end)
 
             try:
-                DollarObjectIdMap.add(dollar_object)
+                dollar_id_map.add(dollar_object)
             except DollarException as e:
                 raise DollarExecutionException(
                         e.get_message(),
@@ -67,9 +68,10 @@ class DollarBuilder:
                     HeaderTransformer.transform(
                             dollar_object,
                             dollar_object.get_unparsed_header(),
-                            dollar_context))
+                            dollar_context,
+                            dollar_id_map))
             try:
-                primary_plugin = PluginMap.get_extension(dollar_object.get_type())
+                primary_plugin = plugin_map.get_extension(dollar_object.get_type())
             except DollarException as e:
                 raise DollarExecutionException(
                         e.get_message(),
@@ -91,7 +93,7 @@ class DollarBuilder:
                 if validate_plugin.extends() is not None:
                     visited.append(validate_plugin.extends())
                     try:
-                        validate_plugin = PluginMap.get_extension(validate_plugin.extends())
+                        validate_plugin = plugin_map.get_extension(validate_plugin.extends())
                     except DollarException as e:
                         raise DollarExecutionException(
                                 e.get_message(),
@@ -102,8 +104,8 @@ class DollarBuilder:
             primary_plugin.exec_primary(dollar_object)
 
             for key in dollar_object.get_header().keys():
-                if PluginMap.has_extension_with_secondary_key(key):
-                    PluginMap.get_extension_from_secondary_key(key)\
+                if plugin_map.has_extension_with_secondary_key(key):
+                    plugin_map.get_extension_from_secondary_key(key)\
                             .exec_secondary(dollar_object)
 
         for dollar_object in dollar_object_list:
@@ -118,11 +120,15 @@ class DollarBuilder:
 
         for dollar_object in dollar_object_list:
             dollar_object.set_input_formats(
-                    RawToInputTransformer.transform_list(dollar_object, dollar_object.get_raw_formats()))
+                    RawToInputTransformer.transform_list(
+                            dollar_object,
+                            dollar_object.get_raw_formats(),
+                            dollar_id_map,
+                            plugin_map))
 
         for dollar_object in dollar_object_list:
             dollar_object.set_output(
-                    InputToStrTransformer.transform_list(dollar_object, dollar_object.get_input_formats()))
+                    InputToStrTransformer.transform_list(dollar_object, dollar_object.get_input_formats(), plugin_map))
 
         outputs = []
         for dollar_object in dollar_object_list:
@@ -137,8 +143,3 @@ class DollarBuilder:
                     conf_docs_path,
                     conf_target_path,
                     file_ending)
-
-    @classmethod
-    def clean_data(self):
-        PluginHandler.clean()
-        DollarObjectIdMap.clean()

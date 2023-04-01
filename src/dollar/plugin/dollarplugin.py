@@ -4,10 +4,13 @@ from typing import Optional
 from dollar.dollarobject import DollarObject
 from dollar.plugin.plugintype import PluginType
 from dollar.plugin.pluginarg import PluginArg
+from dollar.configmap import ConfigMap
 
 
 class DollarPlugin:
 
+    def __init__(self, config: ConfigMap):
+        self.config = config
     def get_type(self) -> PluginType:
         pass
 
@@ -45,7 +48,7 @@ class DollarBlockPlugin(DollarPlugin):
 class DollarExtensionPlugin(DollarPlugin):
 
     def extends(self):
-        return None
+        return "dollar"
 
     def get_type(self) -> PluginType:
         return PluginType.EXTENSION

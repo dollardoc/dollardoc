@@ -1,3 +1,4 @@
+from .configmap import ConfigMap
 from .confighandler import ConfigHandler
 from .dollarcontext import DollarContext
 from .dollarexception import DollarExecutionException

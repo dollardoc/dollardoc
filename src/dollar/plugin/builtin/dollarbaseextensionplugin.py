@@ -2,33 +2,33 @@ from dollar.plugin.dollarplugin import DollarExtensionPlugin
 from dollar.dollarobject import DollarObject
 
 
-class PageExtensionPlugin(DollarExtensionPlugin):
+class DollarBaseExtensionPlugin(DollarExtensionPlugin):
 
     def extends(self):
-        return "dollar"
+        return None
 
     def get_name(self):
-        return "page"
+        return "dollar"
 
     def get_secondaries(self):
         return []
 
     def get_primaries(self):
-        return ["title", "description"]
+        return ["id", "type"]
 
     def validate_primary(self, dollar_object: DollarObject):
         count = 2
         ret = ""
 
-        if "title" not in dollar_object.get_header():
+        if "id" not in dollar_object.get_header():
             count = count - 1
-            ret = "Type page requires \"title\" key"
-        if "description" not in dollar_object.get_header():
+            ret = "Type dollar requires \"id\" key"
+        if "type" not in dollar_object.get_header():
             count = count - 1
-            ret = "Type page requires \"description\" key"
+            ret = "Type dollar requires \"type\" key"
 
         if count == 0:
-            return "Type page requires \"title\" and \"description\" keys"
+            return "Type dollar requires \"id\" and \"type\" keys"
         elif count == 1:
             return ret
 

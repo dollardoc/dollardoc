@@ -6,12 +6,12 @@ from dollar.helper.validationhelper import ValidationHelper
 class DollarObjectHelper:
 
     @staticmethod
-    def is_type(dollar_object: DollarObject, dollar_object_type: str):
+    def is_type(dollar_object: DollarObject, dollar_object_type: str, plugin_map: PluginMap):
         if dollar_object.get_type() == dollar_object_type:
             return True
         dollar_object_type_temp = dollar_object.get_type()
-        while PluginMap.has_extension(dollar_object_type_temp):
-            dollar_object_type_extends = PluginMap.get_extension(dollar_object_type_temp).extends()
+        while plugin_map.has_extension(dollar_object_type_temp):
+            dollar_object_type_extends = plugin_map.get_extension(dollar_object_type_temp).extends()
             if dollar_object_type == dollar_object_type_extends:
                 return True
             dollar_object_type_temp = dollar_object_type_extends

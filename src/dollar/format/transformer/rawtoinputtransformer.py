@@ -43,7 +43,12 @@ class _DollarReferenceObject:
 class RawToInputTransformer:
 
     @classmethod
-    def transform(cls, this_dollar_object: DollarObject, raw_format: RawDollarFormat):
+    def transform(
+            cls,
+            this_dollar_object: DollarObject,
+            raw_format: RawDollarFormat,
+            dollar_id_map: DollarObjectIdMap,
+            plugin_map: PluginMap):
         if raw_format.get_format_type() == RawDollarFormatType.TEXT:
             raw_format = cast(RawDollarFormatText, raw_format)
             return InputFormatText(raw_format.get_text(), raw_format.get_dollar_context())
@@ -53,7 +58,8 @@ class RawToInputTransformer:
             dollar_reference_object = cls._handle_dollar_parse(
                     this_dollar_object,
                     raw_format.get_target_text(),
-                    raw_format.get_dollar_context())
+                    raw_format.get_dollar_context(),
+                    dollar_id_map)
             if dollar_reference_object.hasvalue():
                 return InputFormatDollarObjectValue(
                         dollar_reference_object.getdollarobject(),
@@ -68,10 +74,10 @@ class RawToInputTransformer:
         elif raw_format.get_format_type() == RawDollarFormatType.FUNCTION:
             raw_format = cast(RawDollarFormatFunction, raw_format)
             try:
-                plugin = PluginMap.get_function(raw_format.get_function_name())
+                plugin = plugin_map.get_function(raw_format.get_function_name())
             except DollarException as e:
                 raise DollarExecutionException(e.get_message(), raw_format.get_dollar_context())
-            transformed_params = cls.transform_list(this_dollar_object, raw_format.get_parameters())
+            transformed_params = cls.transform_list(this_dollar_object, raw_format.get_parameters(), dollar_id_map, plugin_map)
             params = []
             for transformed_param in transformed_params:
                 if transformed_param.get_format_type() == InputFormatType.TEXT:
@@ -120,15 +126,15 @@ class RawToInputTransformer:
         elif raw_format.get_format_type() == RawDollarFormatType.BLOCK:
             raw_format = cast(RawDollarFormatBlock, raw_format)
             try:
-                plugin = PluginMap.get_block(raw_format.get_block_name())
+                plugin = plugin_map.get_block(raw_format.get_block_name())
             except DollarException as e:
                 raise DollarExecutionException(e.get_message(), raw_format.get_dollar_context())
-            content = cls.transform(this_dollar_object, raw_format.get_content())
+            content = cls.transform(this_dollar_object, raw_format.get_content(), dollar_id_map, plugin_map)
             return InputFormatBlock(plugin, content, raw_format.get_dollar_context())
 
         elif raw_format.get_format_type() == RawDollarFormatType.UNION:
             raw_format = cast(RawDollarFormatUnion, raw_format)
-            children = cls.transform_list(this_dollar_object, raw_format.get_children())
+            children = cls.transform_list(this_dollar_object, raw_format.get_children(), dollar_id_map, plugin_map)
             return InputFormatUnion(children, raw_format.get_dollar_context())
 
         else:
@@ -137,10 +143,15 @@ class RawToInputTransformer:
                     raw_format.get_dollar_context())
 
     @classmethod
-    def transform_list(cls, this_dollar_object: DollarObject, raw_formats: List[RawDollarFormat]):
+    def transform_list(
+            cls,
+            this_dollar_object: DollarObject,
+            raw_formats: List[RawDollarFormat],
+            dollar_id_map: DollarObjectIdMap,
+            plugin_map: PluginMap):
         result = []
         for raw_format in raw_formats:
-            result.append(cls.transform(this_dollar_object, raw_format))
+            result.append(cls.transform(this_dollar_object, raw_format, dollar_id_map, plugin_map))
         return result
 
     @classmethod
@@ -148,14 +159,15 @@ class RawToInputTransformer:
             cls,
             this_dollar_object: DollarObject,
             dollar_str: str,
-            dollar_context: DollarContext) -> _DollarReferenceObject:
+            dollar_context: DollarContext,
+            dollar_id_map: DollarObjectIdMap) -> _DollarReferenceObject:
         dollar_str_split = dollar_str.split(".")
         dollar_id = dollar_str_split[0]
         if dollar_id == "this":
             dollar_object = this_dollar_object
         else:
             try:
-                dollar_object = DollarObjectIdMap.get(dollar_id)
+                dollar_object = dollar_id_map.get(dollar_id)
             except DollarException as e:
                 raise DollarExecutionException(e.get_message(), dollar_context) from e
         check = dollar_object.get_header()

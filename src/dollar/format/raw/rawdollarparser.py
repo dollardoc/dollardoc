@@ -90,7 +90,7 @@ class RawDollarParser:
                         if dollar_open == 1:
                             dollar_text = text
                             continue_text = ""
-                            if dollar_text[-1] in (".", ",", ":", ";", "!", "?"):
+                            if dollar_text[-1] in (".", ",", ":", ";", "!", "?", "\"", "'", "-", "_"):
                                 continue_text = dollar_text[-1]
                                 dollar_text = dollar_text[:-1]
                             result.append(cls._create_result_reference(dollar_text, dollar_context))
@@ -106,15 +106,24 @@ class RawDollarParser:
                     text = text + char
             last_char = char
         if text != "":
+            dollar_text = text
+            text = ""
+            if dollar_text[-1] in (".", ",", ":", ";", "!", "?", "\"", "'", "-", "_"):
+                text = dollar_text[-1]
+                dollar_text = dollar_text[:-1]
             dollar_context = DollarContextSpan(
                     dollar_context_start,
                     DollarContext(file, line, col))
             if dollar_open == 0:
-                result.append(cls._create_result_text(text, dollar_context))
+                result.append(cls._create_result_text(dollar_text, dollar_context))
             elif dollar_open == 1:
-                result.append(cls._create_result_reference(text, dollar_context))
+                result.append(cls._create_result_reference(dollar_text, dollar_context))
             elif dollar_open == 2:
-                result.append(cls._create_result_function(text, dollar_context))
+                result.append(cls._create_result_function(dollar_text, dollar_context))
+
+            if text != "":
+                result.append(cls._create_result_text(text, dollar_context))
+
         return result
 
     @classmethod
@@ -187,6 +196,9 @@ class RawDollarParser:
                 dollar_context.get_context_start().get_line() + 1,
                 0)
         plugin_content = cls.parse("\n".join(text_split_new), dollar_context_content)
+        dollar_context_union_col_end = 1
+        if len(text_split_new) > 0:
+            dollar_context_union_col_end = len(text_split_new[-1]) + 1
         dollar_context_union = DollarContextSpan(
                 DollarContext(
                         dollar_context.get_context_start().get_file(),
@@ -195,7 +207,7 @@ class RawDollarParser:
                 DollarContext(
                         dollar_context.get_context_end().get_file(),
                         dollar_context.get_context_end().get_line() - 1,
-                        len(text_split_new[-1]) + 1)
+                        dollar_context_union_col_end)
         )
         return RawDollarFormatBlock(
                 plugin_name,
