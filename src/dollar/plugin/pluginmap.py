@@ -32,6 +32,8 @@ class PluginMap:
         return self.extension_map[plugin_name]
 
     def has_extension(self, plugin_name):
+        if plugin_name is None:
+            return False
         return plugin_name in self.extension_map
 
     def get_extension_from_secondary_key(self, key) -> DollarExtensionPlugin:

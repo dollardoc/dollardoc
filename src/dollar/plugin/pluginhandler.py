@@ -2,6 +2,7 @@ import os
 import importlib.util
 import inspect
 
+from dollar.plugin.builtinpluginloader import BuiltinPluginLoader
 from dollar.plugin.dollarplugin import DollarPlugin
 from dollar.plugin.pluginmap import PluginMap
 from dollar.configmap import ConfigMap
@@ -9,20 +10,22 @@ from dollar.configmap import ConfigMap
 
 class PluginHandler:
 
-    plugin_map = PluginMap()
-
     @classmethod
     def _import_plugin_path(cls, path, plugin_map: PluginMap, config_map: ConfigMap):
         spec = importlib.util.spec_from_file_location(path, path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        skip = 0
         for key in module.__dict__:
             if inspect.isclass(module.__dict__[key]) and issubclass(module.__dict__[key], DollarPlugin):
-                plugin_map.add(module.__dict__[key](config_map))
+                instance = module.__dict__[key](config_map)
+                if instance.get_name() is not None:
+                    plugin_map.add(instance)
 
     @classmethod
     def import_plugins(cls, path: str, config_map: ConfigMap) -> PluginMap:
-        plugin_map = cls.plugin_map._copy()
+        plugin_map = PluginMap()
+        BuiltinPluginLoader.load(config_map, plugin_map)
         cls._import_plugins(os.path.join(os.path.curdir, path), plugin_map, config_map)
         return plugin_map
 
@@ -35,7 +38,3 @@ class PluginHandler:
                 cls._import_plugins(new_path, plugin_map, config_map)
             elif item.endswith(".py"):
                 cls._import_plugin_path(new_path, plugin_map, config_map)
-
-    @classmethod
-    def register(cls, plugin: DollarPlugin):
-        cls.plugin_map.add(plugin)

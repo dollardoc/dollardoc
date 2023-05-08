@@ -2,22 +2,31 @@ from dollar.dollarobject import DollarObject
 from dollar.format.output.outputformat import OutputFormatText
 from dollar.format.output.outputformat import OutputFormatLink
 from dollar.format.output.outputformat import OutputFormatDollarObject
-from dollar.format.output.outputformatterhandler import OutputFormatterHandler
+from dollar.format.output.outputformatter import OutputFormatter
 
 
 class OutputFactory:
 
     @classmethod
-    def create_link(cls, this_dollar_object: DollarObject, text, href):
-        return OutputFormatterHandler.get_formatter().format_inline(this_dollar_object, [
+    def create_link(
+            cls,
+            output_formatter: OutputFormatter,
+            this_dollar_object: DollarObject,
+            text,
+            href):
+        return output_formatter.format_inline(this_dollar_object, [
             OutputFormatLink(href, [
                 OutputFormatText(text)
             ])
         ])
 
     @classmethod
-    def create_link_dollar_object(cls, this_dollar_object: DollarObject, to_dollar_object: DollarObject):
-        return OutputFormatterHandler.get_formatter().format_inline(this_dollar_object, [
+    def create_link_dollar_object(
+            cls,
+            output_formatter: OutputFormatter,
+            this_dollar_object: DollarObject,
+            to_dollar_object: DollarObject):
+        return output_formatter.format_inline(this_dollar_object, [
             OutputFormatDollarObject(to_dollar_object)
         ])
 

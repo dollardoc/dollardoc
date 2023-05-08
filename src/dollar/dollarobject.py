@@ -41,5 +41,10 @@ class DollarObject:
     def get_target_path(self):
         return self.target_path
 
+    def equals(self, dollar_object):
+        return self.path == dollar_object.path and \
+                self.output_path == dollar_object.output_path and \
+                self.target_path == dollar_object.target_path
+
     def __repr__(self):
         return "DollarObject(id: " + self.get_id() + ")"

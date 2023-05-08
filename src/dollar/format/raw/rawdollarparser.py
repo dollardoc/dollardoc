@@ -41,7 +41,7 @@ class RawDollarParser:
                     last_char = char
                     continue
             if char == "$" and not escape and not quotes:
-                if dollar_open == 3 and raw_content[i+1] != "$" and dollar_count != 2:
+                if dollar_open == 3 and (i + 1) < len(raw_content) and raw_content[i+1] != "$" and dollar_count != 2:
                     text = text + "$"
                 elif dollar_open not in (0, 3):
                     text = text + "$"

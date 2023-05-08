@@ -1,9 +1,9 @@
 from dollar.format.output.outputformatter import OutputFormatterMarkdown
+from dollar.format.output.outputformatdollarobjectlinktype import OutputFormatDollarObjectLinkType
 
 
 class OutputFormatterHandler:
-    formatter = OutputFormatterMarkdown()
 
     @classmethod
-    def get_formatter(cls):
-        return cls.formatter
+    def get_formatter(cls, output_format_dollar_object_link_type: OutputFormatDollarObjectLinkType) -> OutputFormatterMarkdown:
+        return OutputFormatterMarkdown(output_format_dollar_object_link_type)

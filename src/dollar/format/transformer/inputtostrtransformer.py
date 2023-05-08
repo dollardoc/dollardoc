@@ -14,7 +14,7 @@ from dollar.format.input.inputformat import InputFormatBlock
 from dollar.format.input.inputformat import InputFormatUnion
 from dollar.format.input.inputformattype import InputFormatType
 from dollar.format.output.outputfactory import OutputFactory
-from dollar.format.output.outputformatterhandler import OutputFormatterHandler
+from dollar.format.output.outputformatter import OutputFormatter
 from dollar.plugin.pluginargvalidatior import PluginArgValidator
 from dollar.plugin.pluginmap import PluginMap
 
@@ -22,14 +22,22 @@ from dollar.plugin.pluginmap import PluginMap
 class InputToStrTransformer:
 
     @classmethod
-    def transform(cls, this_dollar_object: DollarObject, input_format: InputFormat, plugin_map: PluginMap) -> str:
+    def transform(
+            cls,
+            output_formatter: OutputFormatter,
+            this_dollar_object: DollarObject,
+            input_format: InputFormat,
+            plugin_map: PluginMap) -> str:
         if input_format.get_format_type() == InputFormatType.TEXT:
             input_format = cast(InputFormatText, input_format)
             return input_format.get_text()
 
         elif input_format.get_format_type() == InputFormatType.DOLLAR_OBJECT:
             input_format = cast(InputFormatDollarObject, input_format)
-            return OutputFactory.create_link_dollar_object(this_dollar_object, input_format.get_dollar_object())
+            return OutputFactory.create_link_dollar_object(
+                    output_formatter,
+                    this_dollar_object,
+                    input_format.get_dollar_object())
 
         elif input_format.get_format_type() == InputFormatType.DOLLAR_OBJECT_VALUE:
             input_format = cast(InputFormatDollarObjectValue, input_format)
@@ -40,7 +48,10 @@ class InputToStrTransformer:
                             input_format.get_dollar_context())
                 return input_format.get_value()
             elif isinstance(input_format.get_value(), DollarObject):
-                return OutputFactory.create_link_dollar_object(this_dollar_object, input_format.get_value())
+                return OutputFactory.create_link_dollar_object(
+                        output_formatter,
+                        this_dollar_object,
+                        input_format.get_value())
             else:
                 raise DollarExecutionException(
                         "When rendering, dollar header referenced value needs to be str or DollarObject",
@@ -55,7 +66,7 @@ class InputToStrTransformer:
             try:
                 PluginArgValidator.validate(params, plugin.get_arg_info(), plugin_map)
                 plugin_output = plugin.exec_function(*params)
-                return OutputFormatterHandler.get_formatter().format(this_dollar_object, plugin_output)
+                return output_formatter.format(this_dollar_object, plugin_output)
             except DollarException as e:
                 raise DollarExecutionException(
                         e.get_message(),
@@ -67,7 +78,7 @@ class InputToStrTransformer:
             content = input_format.get_content()
             plugin_output = plugin.exec_block(content)
             try:
-                return OutputFormatterHandler.get_formatter().format(this_dollar_object, plugin_output)
+                return output_formatter.format(this_dollar_object, plugin_output)
             except DollarException as e:
                 raise DollarExecutionException(
                         e.get_message(),
@@ -75,7 +86,7 @@ class InputToStrTransformer:
 
         elif input_format.get_format_type() == InputFormatType.UNION:
             input_format = cast(InputFormatUnion, input_format)
-            return cls.transform_list(this_dollar_object, input_format.get_children())
+            return cls.transform_list(output_formatter, this_dollar_object, input_format.get_children(), plugin_map)
 
         else:
             raise DollarExecutionException(
@@ -83,8 +94,13 @@ class InputToStrTransformer:
                     input_format.get_dollar_context())
 
     @classmethod
-    def transform_list(cls, this_dollar_object: DollarObject, input_formats: List[InputFormat], plugin_map: PluginMap):
+    def transform_list(
+            cls,
+            output_formatter: OutputFormatter,
+            this_dollar_object: DollarObject,
+            input_formats: List[InputFormat],
+            plugin_map: PluginMap):
         result = []
         for input_format in input_formats:
-            result.append(cls.transform(this_dollar_object, input_format, plugin_map))
+            result.append(cls.transform(output_formatter, this_dollar_object, input_format, plugin_map))
         return "".join(result)

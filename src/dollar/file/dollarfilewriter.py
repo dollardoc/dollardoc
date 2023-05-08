@@ -1,15 +1,19 @@
 import os
 import shutil
+from typing import List
 
 from dollar.dollarexception import DollarException
+from dollar.file.dollarfile import DollarFile
 
 
 class DollarFileWriter:
 
     @staticmethod
-    def write_files(target_path, outputs):
+    def clean_dir(target_path):
         if os.path.exists(target_path):
             shutil.rmtree(target_path)
+    @staticmethod
+    def write_files(target_path, outputs: List[DollarFile]):
         for output in outputs:
             save_path = os.path.join(target_path, output.get_path())
             save_folder = os.path.split(save_path)[0]

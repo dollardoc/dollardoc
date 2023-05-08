@@ -16,6 +16,7 @@ from .outputformat import OutputFormatQuoteBlock
 from .outputformat import OutputFormatDefinition
 from .outputformat import OutputFormatPluginBlock
 from .outputformat import OutputFormatDollarObject
+from .outputformatdollarobjectlinktype import OutputFormatDollarObjectLinkType
 from .outputformatter import OutputFormatterMarkdown
 from .outputformatterhandler import OutputFormatterHandler
 from .outputformattype import OutputFormatType

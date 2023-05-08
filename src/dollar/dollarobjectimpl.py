@@ -24,6 +24,9 @@ class DollarObjectImpl(DollarObject):
             return self.unparsed_header["type"]
         return self.header["type"]
 
+    def get_content(self) -> str:
+        return "\n".join(self.content)
+
     def get_header(self):
         return self.header
 
@@ -39,11 +42,15 @@ class DollarObjectImpl(DollarObject):
     def get_unparsed_header(self):
         return self.unparsed_header
 
-    def set_unparsed_header(self, unparsed_header):
+    def set_unparsed_header(self, unparsed_header: str):
         self.unparsed_header = unparsed_header
 
     def get_content_without_header(self):
         return "\n".join(self.content[self.header_end + 1:])
+
+    def set_content_without_header(self, content_body: str):
+        content_body_split = content_body.split("\n")
+        self.content = self.content[:self.header_end + 1] + content_body_split
 
     def get_output(self) -> str:
         return self.output
@@ -71,3 +78,19 @@ class DollarObjectImpl(DollarObject):
 
     def set_input_formats(self, input_formats):
         self.input_formats = input_formats
+
+    def equals(self, dollar_object):
+        if not super().equals(dollar_object):
+            return False
+        if self.content == None:
+            if dollar_object.content == None:
+                return True
+            return False
+        if dollar_object.content == None or len(self.content) != len(dollar_object.content):
+            return False
+        for i in range(0, len(self.content)):
+            self_line = self.content[i]
+            do_line = dollar_object.content[i]
+            if self_line != do_line:
+                return False
+        return True

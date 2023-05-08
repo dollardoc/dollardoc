@@ -20,12 +20,24 @@ from dollar.format.output.outputformat import OutputFormatQuoteBlock
 from dollar.format.output.outputformat import OutputFormatDefinition
 from dollar.format.output.outputformat import OutputFormatPluginBlock
 from dollar.format.output.outputformat import OutputFormatDollarObject
+from dollar.format.output.outputformatdollarobjectlinktype import OutputFormatDollarObjectLinkType
 
 
-class OutputFormatterMarkdown:
+class OutputFormatter:
 
-    @classmethod
-    def format(cls, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat], context=""):
+    def format(self, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat], context="") -> str:
+        pass
+
+    def format_inline(self, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat]) -> str:
+        pass
+
+
+class OutputFormatterMarkdown(OutputFormatter):
+
+    def __init__(self, output_format_dollar_object_link_type: OutputFormatDollarObjectLinkType):
+        self.link_type = output_format_dollar_object_link_type
+
+    def format(self, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat], context="") -> str:
         result = []
         for dollar_format in dollar_formats:
             dollar_format.validate()
@@ -43,23 +55,23 @@ class OutputFormatterMarkdown:
                         context
                         + head
                         + " "
-                        + cls.format_inline(this_dollar_object, dollar_format.get_children()))
+                        + self.format_inline(this_dollar_object, dollar_format.get_children()))
 
             elif dollar_format_type == OutputFormatType.PARAGRAPH:
                 dollar_format = cast(OutputFormatParagraph, dollar_format)
-                result.append(context + cls.format_inline(this_dollar_object, dollar_format.get_children()))
+                result.append(context + self.format_inline(this_dollar_object, dollar_format.get_children()))
 
             elif dollar_format_type == OutputFormatType.ORDERED_LIST:
                 dollar_format = cast(OutputFormatOrderedList, dollar_format)
                 result.append(
                         context
-                        + cls.format_list(this_dollar_object, dollar_format.get_children(), True, context))
+                        + self.format_list(this_dollar_object, dollar_format.get_children(), True, context))
 
             elif dollar_format_type == OutputFormatType.UNORDERED_LIST:
                 dollar_format = cast(OutputFormatUnorderedList, dollar_format)
                 result.append(
                         context
-                        + cls.format_list(this_dollar_object, dollar_format.get_children(), False, context))
+                        + self.format_list(this_dollar_object, dollar_format.get_children(), False, context))
 
             elif dollar_format_type == OutputFormatType.CODE_BLOCK:
                 dollar_format = cast(OutputFormatCodeBlock, dollar_format)
@@ -78,17 +90,17 @@ class OutputFormatterMarkdown:
 
             elif dollar_format_type == OutputFormatType.QUOTE_BLOCK:
                 dollar_format = cast(OutputFormatQuoteBlock, dollar_format)
-                result.append(cls.format(this_dollar_object, dollar_format.get_children(), context + "> "))
+                result.append(self.format(this_dollar_object, dollar_format.get_children(), context + "> "))
 
             elif dollar_format_type == OutputFormatType.DEFINITION:
                 dollar_format = cast(OutputFormatDefinition, dollar_format)
                 result.append(
                         context
-                        + cls.format_inline(this_dollar_object, dollar_format.get_defined_children())
+                        + self.format_inline(this_dollar_object, dollar_format.get_defined_children())
                         + "\n"
                         + context
                         + ": "
-                        + cls.format_inline(this_dollar_object, dollar_format.get_definition_children()))
+                        + self.format_inline(this_dollar_object, dollar_format.get_definition_children()))
 
             elif dollar_format_type == OutputFormatType.PLUGIN_BLOCK:
                 dollar_format = cast(OutputFormatPluginBlock, dollar_format)
@@ -112,8 +124,7 @@ class OutputFormatterMarkdown:
         join_str = "\n" + context + "\n"
         return join_str.join(result)
 
-    @classmethod
-    def format_inline(cls, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat]):
+    def format_inline(self, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat]) -> str:
         result = ""
         for dollar_format in dollar_formats:
             dollar_format.validate()
@@ -128,11 +139,11 @@ class OutputFormatterMarkdown:
 
             elif dollar_format_type == OutputFormatType.BOLD:
                 dollar_format = cast(OutputFormatBold, dollar_format)
-                result = result + "**" + cls.format_inline(this_dollar_object, dollar_format.get_children()) + "**"
+                result = result + "**" + self.format_inline(this_dollar_object, dollar_format.get_children()) + "**"
 
             elif dollar_format_type == OutputFormatType.ITALIC:
                 dollar_format = cast(OutputFormatItalic, dollar_format)
-                result = result + "*" + cls.format_inline(this_dollar_object, dollar_format.get_children()) + "*"
+                result = result + "*" + self.format_inline(this_dollar_object, dollar_format.get_children()) + "*"
 
             elif dollar_format_type == OutputFormatType.CODE:
                 dollar_format = cast(OutputFormatCode, dollar_format)
@@ -141,7 +152,7 @@ class OutputFormatterMarkdown:
             elif dollar_format_type == OutputFormatType.LINK:
                 dollar_format = cast(OutputFormatLink, dollar_format)
                 result = result + "["
-                result = result + cls.format_inline(this_dollar_object, dollar_format.get_children())
+                result = result + self.format_inline(this_dollar_object, dollar_format.get_children())
                 result = result + "]("
                 result = result + dollar_format.get_href()
                 result = result + ")"
@@ -152,15 +163,19 @@ class OutputFormatterMarkdown:
                 title = dollar_object.get_id()
                 if "title" in dollar_object.get_header():
                     title = dollar_object.get_header()["title"]
-                result = result + "[" + title + "](" + dollar_format.get_href(this_dollar_object) + ")"
+                result = result + "[" + title + "]("
+                if self.link_type == OutputFormatDollarObjectLinkType.TO_MARKDOWN_FILE:
+                    result = result + dollar_format.get_href(this_dollar_object)
+                elif self.link_type == OutputFormatDollarObjectLinkType.TO_DOLLAR_ID:
+                    result = result + dollar_format.get_dollar_object().get_id()
+                result = result + ")"
 
             else:
                 raise DollarExecutionException("Format {} is not supported".format(dollar_format_type))
 
         return result
 
-    @classmethod
-    def format_list(cls, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat], ordered, context=""):
+    def format_list(self, this_dollar_object: DollarObject, dollar_formats: List[OutputFormat], ordered, context=""):
         count = 1
         result = ""
         for dollar_format in dollar_formats:
@@ -175,13 +190,13 @@ class OutputFormatterMarkdown:
                 else:
                     result = result + context + "* "
                 count = count + 1
-                result = result + cls.format_inline(this_dollar_object, dollar_format.get_children())
+                result = result + self.format_inline(this_dollar_object, dollar_format.get_children())
 
             elif dollar_format_type == OutputFormatType.ORDERED_LIST:
                 dollar_format = cast(OutputFormatOrderedList, dollar_format)
                 if count == 1:
                     raise DollarExecutionException("List can not be the first item inside a List")
-                result = result + "\n" + cls.format_list(
+                result = result + "\n" + self.format_list(
                         this_dollar_object,
                         dollar_format.get_children(),
                         True,
@@ -191,7 +206,7 @@ class OutputFormatterMarkdown:
                 dollar_format = cast(OutputFormatUnorderedList, dollar_format)
                 if count == 1:
                     raise DollarExecutionException("List can not be the first item inside a List")
-                result = result + "\n" + cls.format_list(
+                result = result + "\n" + self.format_list(
                         this_dollar_object,
                         dollar_format.get_children(),
                         False,

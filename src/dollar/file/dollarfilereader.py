@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 from dollar.dollarexception import DollarException
 from dollar.file.dollarfile import DollarFile
@@ -7,11 +8,11 @@ from dollar.file.dollarfile import DollarFile
 class DollarFileReader:
 
     @classmethod
-    def read_mdd_files(cls, src):
-        return cls._read_mdd_files(src)
+    def read_files(cls, src: str) -> List[DollarFile]:
+        return cls._read_files(src)
 
     @classmethod
-    def _read_mdd_files(cls, open_dir, _open_dir_start=None):
+    def _read_files(cls, open_dir, _open_dir_start=None) -> List[DollarFile]:
         if _open_dir_start is None:
             _open_dir_start = open_dir
         result = []
@@ -19,9 +20,9 @@ class DollarFileReader:
         for item in dir_list:
             full_path = os.path.join(open_dir, item)
             if os.path.isdir(full_path):
-                result2 = cls._read_mdd_files(full_path, _open_dir_start)
+                result2 = cls._read_files(full_path, _open_dir_start)
                 result = result + result2
-            elif item.endswith(".mdd"):
+            else:
                 try:
                     f = open(full_path, "r")
                 except Exception as e:
@@ -36,8 +37,6 @@ class DollarFileReader:
                     file_output = f.read()
                 except Exception as e:
                     raise DollarException("Failed to read file {}".format(full_path)) from e
-                result.append(DollarFile(new_path, file_output))
+                result.append(DollarFile(new_path, file_output, item.split(".")[-1]))
                 f.close()
-            else:
-                pass  # Allow other files to exist in src
         return result

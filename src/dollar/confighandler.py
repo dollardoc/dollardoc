@@ -1,5 +1,5 @@
 import yaml
-from typing import List
+import os
 
 from dollar.configmap import ConfigMap
 from dollar.configtype import ConfigType
@@ -11,11 +11,11 @@ class ConfigHandler:
     ]
 
     @classmethod
-    def load_config_default(cls) -> ConfigMap:
-        return cls.load_config_file("dollarconfig.yaml")
+    def load_config_default(cls, path: str = "./") -> ConfigMap:
+        return cls.load_config_file(os.path.join(path, "dollarconfig.yaml"))
 
     @classmethod
-    def load_config_file(cls, path) -> ConfigMap:
+    def load_config_file(cls, path: str) -> ConfigMap:
         with open(path, "r") as f:
             config = yaml.safe_load(f.read())
             config_map = ConfigMap(config)

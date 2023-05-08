@@ -1,4 +1,4 @@
-from dollar.plugin.pluginhandler import PluginHandler
+from dollar.plugin.pluginmap import PluginMap
 from dollar.plugin.builtin.dollarbaseextensionplugin import DollarBaseExtensionPlugin
 from dollar.plugin.builtin.linkfunctionplugin import LinkFunctionPlugin
 from dollar.plugin.builtin.listbacklinksfunctionplugin import ListBackLinksFunctionPlugin
@@ -9,12 +9,11 @@ from dollar.configmap import ConfigMap
 
 
 class BuiltinPluginLoader:
-
     @staticmethod
-    def load(config_map: ConfigMap):
-        PluginHandler.register(DollarBaseExtensionPlugin(config_map))
-        PluginHandler.register(LinkFunctionPlugin(config_map))
-        PluginHandler.register(ListBackLinksFunctionPlugin(config_map))
-        PluginHandler.register(ListFunctionPlugin(config_map))
-        PluginHandler.register(ListRefFunctionPlugin(config_map))
-        PluginHandler.register(PageExtensionPlugin(config_map))
+    def load(config_map: ConfigMap, plugin_map: PluginMap):
+        plugin_map.add(DollarBaseExtensionPlugin(config_map))
+        plugin_map.add(LinkFunctionPlugin(config_map))
+        plugin_map.add(ListBackLinksFunctionPlugin(config_map))
+        plugin_map.add(ListFunctionPlugin(config_map))
+        plugin_map.add(ListRefFunctionPlugin(config_map))
+        plugin_map.add(PageExtensionPlugin(config_map))
